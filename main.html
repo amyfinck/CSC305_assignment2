@@ -18,7 +18,6 @@ uniform mat4 projectionMatrix;
 uniform vec4 lightPosition;
 uniform float shininess;
 
-
 void
 main()
 {
@@ -26,9 +25,9 @@ main()
     vec3 pos = (modelViewMatrix * vPosition).xyz;
     //vec3 N = normalize( (modelViewMatrix*vec4(vNormal,0.0)).xyz);
     vec3 N = normalize( (normalMatrix*vec4(vNormal,0.0)).xyz);
-    
 
-    vec3 L = vec3(normalize(lightPosition.xyz-pos)) ;
+    // The light poistion has been put in eye coordinates, so it is a constant source
+    vec3 L = vec3(normalize((modelViewMatrix*lightPosition).xyz-pos)) ;
     vec3 V = normalize(-pos.xyz) ;
     vec3 R = reflect(-L, N) ;
 
@@ -55,11 +54,10 @@ main()
 }
 </script>
 
-<script id="fragment-shader" type="x-shader/x-fragment">#version 300 es
+<script id="main-fragment-shader" type="x-shader/x-fragment">#version 300 es
 precision mediump float;
 
 uniform sampler2D texture1;
-uniform sampler2D texture2;
 uniform int useTextures;
 
 in vec4 fColor;

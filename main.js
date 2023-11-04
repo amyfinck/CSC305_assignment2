@@ -31,6 +31,7 @@ var ambientColor, diffuseColor, specularColor;
 var modelMatrix, viewMatrix, modelViewMatrix, projectionMatrix, normalMatrix;
 var modelViewMatrixLoc, projectionMatrixLoc, normalMatrixLoc;
 var eye;
+var eyeLocation = [0, 0, 10];
 var at = vec3(0.0, 0.0, 0.0);
 var up = vec3(0.0, 1.0, 0.0);
 
@@ -54,36 +55,39 @@ var currentRotation = [0,0,0];
 var useTextures = 0;
 
 //making a texture image procedurally
-//Let's start with a 1-D array
-// TODO replace this with a fuzzy pattern for bug body
-var texSize = 8;
-var imageCheckerBoardData = new Array();
+//1-D array
+var texSize =128;
+var imageFlowerCentreData = new Array();
 
 // Now for each entry of the array make another array
-// 2D array now!
 for (var i =0; i<texSize; i++)
-	imageCheckerBoardData[i] = new Array();
+	imageFlowerCentreData[i] = new Array();
 
 // Now for each entry in the 2D array make a 4 element array (RGBA! for colour)
 for (var i =0; i<texSize; i++)
 	for ( var j = 0; j < texSize; j++)
-		imageCheckerBoardData[i][j] = new Float32Array(4);
+		imageFlowerCentreData[i][j] = new Float32Array(4);
 
 // Now for each entry in the 2D array let's set the colour.
 // We could have just as easily done this in the previous loop actually
-for (var i =0; i<texSize; i++) 
-	for (var j=0; j<texSize; j++) {
-		var c = (i + j ) % 2;
-		imageCheckerBoardData[i][j] = [c, c, c, 1];
+// TODO make centre of the flower a different color
+for (var i =0; i<texSize; i++) {
+	for (var j=0; j<texSize; j++) 
+    {
+        random = Math.random()
+        imageFlowerCentreData[i][j] = [random / 2 + 0.5, random / 2 + 0.5, 0, 1]
+    }
 }
 
 //Convert the image to uint8 rather than float.
-var imageCheckerboard = new Uint8Array(4*texSize*texSize);
+var imageFlowerCentre = new Uint8Array(4*texSize*texSize);
 
 for (var i = 0; i < texSize; i++)
 	for (var j = 0; j < texSize; j++)
 	   for(var k =0; k<4; k++)
-			imageCheckerboard[4*texSize*i+4*j+k] = 255*imageCheckerBoardData[i][j][k];
+			imageFlowerCentre[4*texSize*i+4*j+k] = 255*imageFlowerCentreData[i][j][k];
+
+// TODO make flower petal textures
 		
 // For this example we are going to store a few different textures here
 var textureArray = [] ;
@@ -134,7 +138,7 @@ function loadFileTexture(tex, filename)
 }
 
 // Once the above image file loaded with loadFileTexture is actually loaded,
-// this funcion is the onload handler and will be called.
+// this function is the onload handler and will be called.
 function handleTextureLoaded(textureObj) {
 	//Binds a texture to a target. Target is then used in future calls.
 		//Targets:
@@ -265,17 +269,6 @@ function loadImageTexture(tex, image) {
     tex.isTextureReady = true;
 }
 
-// This just calls the appropriate texture loads for this example adn puts the textures in an array
-function initTexturesForExample() {
-
-    textureArray.push({}) ;
-    loadImageTexture(textureArray[textureArray.length-1],imageCheckerboard) ;
-    
-    textureArray.push({}) ;
-    // From https://opengameart.org/content/seamless-sky-backgrounds, free licence to use
-    loadFileTexture(textureArray[textureArray.length-1],"Cloudy_Sky.png") ;
-}
-
 // Changes which texture is active in the array of texture examples (see initTexturesForExample)
 function toggleTextures() {
     useTextures = (useTextures + 1) % 2
@@ -297,7 +290,7 @@ window.onload = function init() {
     //
     //  Load shaders and initialize attribute buffers
     //
-    program = initShaders( gl, "vertex-shader", "fragment-shader" );
+    program = initShaders( gl, "vertex-shader", "main-fragment-shader" );
     gl.useProgram( program );
     
     setColor(materialDiffuse);
@@ -313,7 +306,7 @@ window.onload = function init() {
     modelViewMatrixLoc = gl.getUniformLocation( program, "modelViewMatrix" );
     normalMatrixLoc = gl.getUniformLocation( program, "normalMatrix" );
     projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
-    
+
     // Lighting Uniforms
     gl.uniform4fv( gl.getUniformLocation(program, 
        "ambientProduct"),flatten(ambientProduct) );
@@ -348,10 +341,15 @@ window.onload = function init() {
         RX = xRot ;
         RY = yRot ;
         window.requestAnimFrame(render); };
-	
-	
-	// Helper function just for this example to load the set of textures
-    initTexturesForExample() ;
+    
+    // load sky texture
+    // From https://opengameart.org/content/seamless-sky-backgrounds, free licence to use
+    textureArray.push({}) ;
+    loadFileTexture(textureArray[textureArray.length-1],"Cloudy_Sky.png") ;
+
+    // load checkerboard texture
+    textureArray.push({}) ;
+    loadImageTexture(textureArray[textureArray.length-1],imageFlowerCentre) ;
 
     waitForTextures(textureArray);
 }
@@ -432,12 +430,29 @@ function gPush() {
     MS.push(modelMatrix);
 }
 
+function drawPetals() {
+    
+    for(var i = 0; i < 12; i++) {
+        gRotate(30, 0, 1, 0);
+        gPush(); // petal 1
+        {
+            gTranslate(4, 0, 0);
+            gScale(1.2, 0.5, 1.2);
+            setColor(vec4(1, 0, 1, 1.0));
+            drawSphere();
+        }
+        gPop();	// petal 1
+    }
+}
 
 function render(timestamp) {
     
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     
-    eye = vec3(0, Math.cos(0.3*(timestamp-Math.PI)/500)+0.3, 10); // start at (0, 0, 10)
+    // move eye location based on parametric equation of a circle in the x and z directions
+    eyeLocation[0] = 10*Math.cos(timestamp / 3000);
+    eyeLocation[2] = 10*Math.sin(timestamp / 3000);
+    eye = vec3(eyeLocation[0], 3, eyeLocation[2]); // start at (0, 0, 10)
     MS = []; // Initialize modeling matrix stack
 	
 	// initialize the modeling matrix to identity
@@ -448,13 +463,10 @@ function render(timestamp) {
    
     // set the projection matrix
     projectionMatrix = ortho(left, right, bottom, ytop, near, far);
-    
+
     // set all the matrices
     setAllMatrices();
-    gRotate(timestamp/(Math.PI*10),0,1,0);
     setMV();
-    
-    
     
 	if( animFlag )
     {
@@ -469,35 +481,17 @@ function render(timestamp) {
 		dt = (timestamp - prevTime) / 1000.0;
 		prevTime = timestamp;
 	}
-	
-	// We need to bind our textures, ensure the right one is active before we draw
-	//Activate a specified "texture unit".
-    //Texture units are of form gl.TEXTUREi | where i is an integer.
-	gl.activeTexture(gl.TEXTURE0);
-	if (useTextures % 2 == 1) 
-	{
-		//Binds a texture to a target. Target is then used in future calls.
-		//Targets:
-			// TEXTURE_2D           - A two-dimensional texture.
-			// TEXTURE_CUBE_MAP     - A cube-mapped texture.
-			// TEXTURE_3D           - A three-dimensional texture.
-			// TEXTURE_2D_ARRAY     - A two-dimensional array texture.
 
-	}
-    else
-	{
-		gl.bindTexture(gl.TEXTURE_2D, textureArray[1].textureWebGL);
-		gl.uniform1i(gl.getUniformLocation(program, "texture2"), 0);
-	}
-    
     gPush();
     {
         gScale(30, 30, 30);
         gRotate(90, 1, 0, 0);
         setColor(vec4(0, 1, 0, 1.0));
-        
+
         gl.activeTexture(gl.TEXTURE0);
-        
+        gl.bindTexture(gl.TEXTURE_2D, textureArray[0].textureWebGL);
+        gl.uniform1i(gl.getUniformLocation(program, "texture1"), 0);
+
         toggleTextures() ;
         drawCylinder();
         toggleTextures() ;
@@ -505,139 +499,27 @@ function render(timestamp) {
     }
     gPop();
 
-
-    // Now let's draw a shape animated!
-	// You may be wondering where the texture coordinates are!
-	// We've modified the object.js to add in support for this attribute array!
-	gPush();
-	{
-		//currentRotation[2] = currentRotation[2] + 30*dt;
-		//gRotate(currentRotation[2],0,0,1);
-		//drawCube();
-	}
-	gPop();
-
     //Ground flower
     gPush();
     {
         gTranslate(0, -3, 0);
-        gRotate(currentRotation[2], 0, 1, 0);
-        gPush(); // ground box
+        gPush(); // flower centre
         {
-            gScale(3, 0.4, 3);
+            gRotate(90, 1, 0, 0);
+            gScale(3, 3, 1);
             setColor(vec4(1, 1, 0, 1.0));
-            drawSphere();
-        }
-        gPop();	// ground box
 
-        gPush(); // petal 1
-        {
-            gTranslate(4, 0, 0);
-            gScale(1.2, 0.5, 1.2);
-            setColor(vec4(1, 0, 1, 1.0));
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, textureArray[1].textureWebGL);
+            gl.uniform1i(gl.getUniformLocation(program, "texture1"), 0);
+            toggleTextures();
             drawSphere();
+            toggleTextures();
         }
-        gPop();	// petal 1
-        gRotate(30, 0, 1, 0);
-        gPush(); // petal 1
-        {
-            gTranslate(4, 0, 0);
-            gScale(1.2, 0.5, 1.2);
-            setColor(vec4(1, 0, 1, 1.0));
-            drawSphere();
-        }
-        gPop();	// petal 1
-        gRotate(30, 0, 1, 0);
-        gPush(); // petal 1
-        {
-            gTranslate(4, 0, 0);
-            gScale(1.2, 0.5, 1.2);
-            setColor(vec4(1, 0, 1, 1.0));
-            drawSphere();
-        }
-        gPop();	// petal 1
-        gRotate(30, 0, 1, 0);
-        gPush(); // petal 1
-        {
-            gTranslate(4, 0, 0);
-            gScale(1.2, 0.5, 1.2);
-            setColor(vec4(1, 0, 1, 1.0));
-            drawSphere();
-        }
-        gPop();	// petal 1
-        gRotate(30, 0, 1, 0);
-        gPush(); // petal 1
-        {
-            gTranslate(4, 0, 0);
-            gScale(1.2, 0.5, 1.2);
-            setColor(vec4(1, 0, 1, 1.0));
-            drawSphere();
-        }
-        gPop();	// petal 1
-        gRotate(30, 0, 1, 0);
-        gPush(); // petal 1
-        {
-            gTranslate(4, 0, 0);
-            gScale(1.2, 0.5, 1.2);
-            setColor(vec4(1, 0, 1, 1.0));
-            drawSphere();
-        }
-        gPop();	// petal 1
-        gRotate(30, 0, 1, 0);
-        gPush(); // petal 1
-        {
-            gTranslate(4, 0, 0);
-            gScale(1.2, 0.5, 1.2);
-            setColor(vec4(1, 0, 1, 1.0));
-            drawSphere();
-        }
-        gPop();	// petal 1
-        gRotate(30, 0, 1, 0);
-        gPush(); // petal 1
-        {
-            gTranslate(4, 0, 0);
-            gScale(1.2, 0.5, 1.2);
-            setColor(vec4(1, 0, 1, 1.0));
-            drawSphere();
-        }
-        gPop();	// petal 1
-        gRotate(30, 0, 1, 0);
-        gPush(); // petal 1
-        {
-            gTranslate(4, 0, 0);
-            gScale(1.2, 0.5, 1.2);
-            setColor(vec4(1, 0, 1, 1.0));
-            drawSphere();
-        }
-        gPop();	// petal 1
-        gRotate(30, 0, 1, 0);
-        gPush(); // petal 1
-        {
-            gTranslate(4, 0, 0);
-            gScale(1.2, 0.5, 1.2);
-            setColor(vec4(1, 0, 1, 1.0));
-            drawSphere();
-        }
-        gPop();	// petal 1
-        gRotate(30, 0, 1, 0);
-        gPush(); // petal 1
-        {
-            gTranslate(4, 0, 0);
-            gScale(1.2, 0.5, 1.2);
-            setColor(vec4(1, 0, 1, 1.0));
-            drawSphere();
-        }
-        gPop();	// petal 1
-        gRotate(30, 0, 1, 0);
-        gPush(); // petal 1
-        {
-            gTranslate(4, 0, 0);
-            gScale(1.2, 0.5, 1.2);
-            setColor(vec4(1, 0, 1, 1.0));
-            drawSphere();
-        }
-        gPop();	// petal 1
-        gRotate(30, 0, 1, 0);
+        gPop();	// flower centre
+        
+        // flower petals
+        drawPetals();
 
         gPush(); // stem
         {
@@ -650,15 +532,22 @@ function render(timestamp) {
         }
         gPop();	// stem
 
-        gTranslate(0, 0.9, 0);
+        gTranslate(0, 1.5, 0);
         gPush(); // bug
         {
             gScale(0.5, 0.5, 0.5);
             setColor(vec4(0, 1, 0, 1.0));
-            drawSphere();
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, textureArray[1].textureWebGL);
+            gl.uniform1i(gl.getUniformLocation(program, "texture1"), 0);
+
+            toggleTextures();
+            //drawSphere();
+            toggleTextures();
         }
         gPop();
-        gTranslate(1, 0, 0);
+        gTranslate(1, 1.5, 0);
+        // TODO two bugs kissing here
         gPush()
         {
             gScale(0.5, 0.5, 0.5);
@@ -666,6 +555,18 @@ function render(timestamp) {
             drawSphere();
         }
         gPop();
+        
+        // TODO remove this, its for debugging the flower centre texture
+        // gPush()
+        // {
+        //     gTranslate(0, 1,0)
+        //     gScale(0.5, 0.5, 0.5);
+        //     setColor(vec4(0, 1, 0, 1.0));
+        //     toggleTextures();
+        //     drawCube();
+        //     toggleTextures();
+        // }
+        // gPop();
 
     }
     gPop();
