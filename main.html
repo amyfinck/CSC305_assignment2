@@ -8,52 +8,33 @@ in vec3 vNormal;
 in vec4 vColor; // Note this is not actually getting used the compiler will optimize it out which will throw vertexAttribPointer errors on javascript side
 in vec2 vTexCoord;
 
-out vec4 fColor;
-out vec2 fTexCoord;
-
-uniform vec4 ambientProduct, diffuseProduct, specularProduct;
 uniform mat4 modelViewMatrix;
 uniform mat4 normalMatrix;
 uniform mat4 projectionMatrix;
 uniform vec4 lightPosition;
-uniform float shininess;
+
+out vec3 fPos; // vertex position in eye coordinates
+out vec3 fLpos; // light position in eye coordinates
+out vec3 fN; // vertex normal in eye coordinates
+out vec2 fTexCoord;
 
 void
 main()
 {
-    // Transform vertex normal into eye coordinates
-    vec3 pos = (modelViewMatrix * vPosition).xyz;
-    //vec3 N = normalize( (modelViewMatrix*vec4(vNormal,0.0)).xyz);
-    vec3 N = normalize( (normalMatrix*vec4(vNormal,0.0)).xyz);
+    fPos = (modelViewMatrix * vPosition).xyz;
+    fN = normalize( (normalMatrix*vec4(vNormal,0.0)).xyz);
+    fLpos = lightPosition.xyz;
 
-    // TODO when I multiply by MVM bugs are illuminated from different sides
-    vec3 L = vec3(normalize((lightPosition).xyz-pos)) ;
-    vec3 V = normalize(-pos.xyz) ;
-    vec3 R = reflect(-L, N) ;
-
-    // Compute terms in the illumination equation
-    float lightDotNormal = max( dot(L, N), 0.0 );
-    vec4 diffuse = vec4(0.0, 0.0, 0.0, 1.0);
-    diffuse = diffuseProduct * lightDotNormal;
-	
-    float reflectedDotViewShiny = pow( max(dot(R, V), 0.0), shininess );
-	vec4 specular = vec4(0.0, 0.0, 0.0, 1.0);
-    specular = specularProduct * reflectedDotViewShiny;
-    
-    if( dot(L, N) < 0.0 ) {
-        specular = vec4(0.0, 0.0, 0.0, 1.0);
-    }
-    
+    fTexCoord = vTexCoord;
     gl_Position = projectionMatrix * modelViewMatrix * vPosition;
-    
-	fTexCoord = vTexCoord;
-    fColor = ambientProduct + diffuse + specular;
-    fColor.a = 1.0;
 }
 </script>
 
 <script id="fragment-shader" type="x-shader/x-fragment">#version 300 es
 precision mediump float;
+
+uniform vec4 ambientProduct, diffuseProduct, specularProduct;
+uniform float shininess;
 
 uniform sampler2D texture1;
 uniform int useTextures;
@@ -62,10 +43,34 @@ uniform int drawHearts;
 uniform vec2 resolution;
 uniform float time;
 
-in vec4 fColor;
-in vec2 fTexCoord;
+in vec3 fPos;
+in vec3 fLpos;
+in vec3 fN;
 
+in vec2 fTexCoord;
 layout(location=0) out vec4 fragColor;
+
+// EXACTLY the same as in the case of per vertex ADS
+vec4 ads(vec3 pos, vec3 lpos, vec3 N)
+{
+    vec3 L = normalize(lpos - pos);
+    vec3 V = normalize(-pos); // why?
+    vec3 R = reflect(-L, N);
+    // Compute terms in the illumination equation
+    float lightDotNormal = max( dot(L, N), 0.0 );
+    vec4 diffuse = vec4(0.0, 0.0, 0.0, 1.0);
+    diffuse = diffuseProduct * lightDotNormal;
+    float reflectedDotViewShiny = pow( max(dot(R, V), 0.0), shininess );
+    vec4 specular = vec4(0.0, 0.0, 0.0, 1.0);
+    specular = specularProduct * reflectedDotViewShiny;
+    if( dot(L, N) < 0.0 )
+    {
+        specular = vec4(0.0, 0.0, 0.0, 1.0);
+    }
+    vec4 color = ambientProduct + diffuse + specular;
+    color.a = 1.0;
+    return color;
+}
 
 int heart(vec2 st)
 {
@@ -109,7 +114,7 @@ main()
 	if( useTextures == 0)
     {
         // If no texture set, use the color from the vertex shader
-        fragColor = fColor;
+        fragColor = ads(fPos, fLpos, fN);
 	}
 	else
 	{
@@ -142,7 +147,6 @@ main()
 	}
 }
 </script>
-
 
 <script type="text/javascript" src="Common/webgl-utils.js"></script>
 <script type="text/javascript" src="Common/initShaders.js"></script>

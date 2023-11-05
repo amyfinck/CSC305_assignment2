@@ -607,9 +607,7 @@ function render(timestamp) {
         else
         {
             toggleTextures() ;
-            //toggleHearts();
             drawCylinder();
-            //toggleHearts();
             toggleTextures() ;
         }
     }
@@ -648,30 +646,6 @@ function render(timestamp) {
         }
         gPop();	// stem
 
-        gTranslate(0, 1.5, 0);
-        gPush(); // bug
-        {
-            gScale(0.5, 0.5, 0.5);
-            setColor(vec4(0, 1, 0, 1.0));
-            gl.activeTexture(gl.TEXTURE0);
-            gl.bindTexture(gl.TEXTURE_2D, textureArray[1].textureWebGL);
-            gl.uniform1i(gl.getUniformLocation(program, "texture1"), 0);
-
-            toggleTextures();
-            //drawSphere();
-            toggleTextures();
-        }
-        gPop();
-        // TODO two bugs kissing here
-        gPush()
-        {
-            gScale(0.5, 0.5, 0.5);
-            setColor(vec4(0, 1, 0, 1.0));
-            //drawSphere();
-        }
-        gPop();
-        //drawSphere();
-        
         // TODO remove this, its for debugging the flower centre texture
         // gPush()
         // {
@@ -684,6 +658,8 @@ function render(timestamp) {
         // }
         // gPop();
         
+        gTranslate(0, 1.5, 0);
+        // first bug
         gPush()
         {
             gTranslate(-3.9, -0.8, 0);
@@ -692,6 +668,7 @@ function render(timestamp) {
         }
         gPop();
 
+        // second bug
         gPush()
         {
             gTranslate(3.9, -0.8, 0);
@@ -700,11 +677,6 @@ function render(timestamp) {
             drawBug(timestamp);
         }
         gPop();
-        
-
-        
-        
-
     }
     gPop();
     if( animFlag )
