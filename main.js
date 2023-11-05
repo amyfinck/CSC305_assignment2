@@ -53,6 +53,7 @@ var controller;
 var currentRotation = [0,0,0];
 
 var useTextures = 0;
+var drawHearts = 0;
 
 //making a texture image procedurally
 //1-D array
@@ -275,6 +276,11 @@ function toggleTextures() {
 	gl.uniform1i(gl.getUniformLocation(program, "useTextures"), useTextures);
 }
 
+function toggleHearts() {
+    drawHearts = (drawHearts + 1) % 2
+    gl.uniform1i(gl.getUniformLocation(program, "drawHearts"), drawHearts);
+}
+
 window.onload = function init() {
 
     canvas = document.getElementById( "gl-canvas" );
@@ -290,7 +296,7 @@ window.onload = function init() {
     //
     //  Load shaders and initialize attribute buffers
     //
-    program = initShaders( gl, "vertex-shader", "main-fragment-shader" );
+    program = initShaders( gl, "vertex-shader", "fragment-shader" );
     gl.useProgram( program );
     
     setColor(materialDiffuse);
@@ -319,6 +325,10 @@ window.onload = function init() {
     gl.uniform1f( gl.getUniformLocation(program, 
        "shininess"),materialShininess );
 
+    // screen resolution
+    gl.uniform2f(gl.getUniformLocation(program,
+        "resolution"), canvas.width, canvas.height);
+    
 
     document.getElementById("animToggleButton").onclick = function() {
         if( animFlag ) {
@@ -536,7 +546,11 @@ function drawBug(timestamp)
 }
 
 function render(timestamp) {
-    
+
+    // pass time to the shader
+    const currentTime = timestamp;
+    gl.uniform1f(gl.getUniformLocation(program, "time"), currentTime);
+
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     
     // move eye location based on parametric equation of a circle in the x and z directions
@@ -576,16 +590,28 @@ function render(timestamp) {
     {
         gScale(30, 30, 30);
         gRotate(90, 1, 0, 0);
-        setColor(vec4(0, 1, 0, 1.0));
+        setColor(vec4(1, 1, 1, 1));
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, textureArray[0].textureWebGL);
         gl.uniform1i(gl.getUniformLocation(program, "texture1"), 0);
 
-        toggleTextures() ;
-        drawCylinder();
-        toggleTextures() ;
-
+        if( Math.cos(timestamp/1000) + 1 < 0.5) 
+        {
+            toggleTextures() ;
+            toggleHearts();
+            drawCylinder();
+            toggleHearts();
+            toggleTextures() ;
+        }
+        else
+        {
+            toggleTextures() ;
+            //toggleHearts();
+            drawCylinder();
+            //toggleHearts();
+            toggleTextures() ;
+        }
     }
     gPop();
 

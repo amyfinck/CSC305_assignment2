@@ -7,6 +7,7 @@
 * Flower centre procedurally generated
 * Petals procedurally generated?
 3. ADS vertex -> Fragment shader
+
 4. Phong -> Blinn-Phong
 5. Custom heart shader
 6. 360 fly around camera

@@ -31,12 +31,10 @@ main()
     vec3 V = normalize(-pos.xyz) ;
     vec3 R = reflect(-L, N) ;
 
-
     // Compute terms in the illumination equation
     float lightDotNormal = max( dot(L, N), 0.0 );
     vec4 diffuse = vec4(0.0, 0.0, 0.0, 1.0);
     diffuse = diffuseProduct * lightDotNormal;
-	
 	
     float reflectedDotViewShiny = pow( max(dot(R, V), 0.0), shininess );
 	vec4 specular = vec4(0.0, 0.0, 0.0, 1.0);
@@ -54,27 +52,93 @@ main()
 }
 </script>
 
-<script id="main-fragment-shader" type="x-shader/x-fragment">#version 300 es
+<script id="fragment-shader" type="x-shader/x-fragment">#version 300 es
 precision mediump float;
 
 uniform sampler2D texture1;
 uniform int useTextures;
+uniform int drawHearts;
+
+uniform vec2 resolution;
+uniform float time;
 
 in vec4 fColor;
 in vec2 fTexCoord;
 
-layout(location=0) out vec4 fragColor ;
+layout(location=0) out vec4 fragColor;
+
+int heart(vec2 st)
+{
+    /*
+    * I am basing the heart shape on this relation adapted from: https://www.desmos.com/calculator/ldlejwob3o
+    *  I scaled it down to fit in the range of -1 to 1 in x and y:
+    * ((2x)^2 + (2y)^2 - 1)^3 <= 4x^2 * 8y^3
+    * I wanted to capture the heart shape in the range of -1.5 to 1.5 in x and y
+    * st range from 0 to 1 therefore I needed to map 0 to -1.5 and 1 to 1.5
+    */
+
+    // maps s and t from 0 to 1 to -1.5 to 1.5
+    float x = st.x * 3. - 1.5;
+    float y = st.y * 3. - 1.5;
+
+    // building up components of the lhs of the equation
+    float xto2 = pow(2.*x, 2.);
+    float yto2 = pow(2.*y, 2.);
+    float xto2pyto2m1 = xto2 + yto2 - 1.;
+
+    // calculate left hand side of the equation
+    float lhs = pow(xto2pyto2m1, 3.);
+    // calculate right hand side of the equation
+    float rhs = pow(2.*x, 2.) * pow(2.*y, 3.);
+
+    if(lhs <= rhs)
+    {
+        // If lhs <= rhs, then this value is in the heart shape I want to draw
+        return 1;
+    }
+    else
+    {
+        // Otherwise, it is not in the heart shape
+        return 0;
+    }
+}
 
 void
 main()
 {
 	if( useTextures == 0)
     {
+        // If no texture set, use the color from the vertex shader
         fragColor = fColor;
 	}
 	else
 	{
-	    fragColor = texture( texture1, fTexCoord );
+		// if drawHearts is set, we want blend with a heart. Otherwise, just draw the texture
+	    if(drawHearts == 1)
+	    {
+	        // divide by the canvas resolution passed into the shader to get s & t from 0 to 1
+	        vec2 st = gl_FragCoord.xy/resolution.xy;
+
+            // check if the current fragment is in the heart shape
+            int is_in_heart = heart(st);
+
+            if(is_in_heart == 1)
+            {
+                vec4 heartColor = vec4(1.0, 0.5, 0.5, 1);
+                // if it is in the heart shape, blend the texture with the color from the vertex shader
+            	fragColor = mix(texture( texture1, fTexCoord ), heartColor, 0.5);
+            }
+            else
+            {
+                // otherwise, just draw the texture
+                fragColor = texture( texture1, fTexCoord );
+            }
+	    }
+	    else
+        {
+            // otherwise, just draw the texture
+            fragColor = texture( texture1, fTexCoord );
+        }
 	}
 }
 </script>

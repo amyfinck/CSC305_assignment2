@@ -1,4 +1,5 @@
-function setAttribPointers(obj) {
+function setAttribPointers(obj) 
+{
     gl.bindBuffer(gl.ARRAY_BUFFER, obj.nBuffer);
     gl.vertexAttribPointer(obj.vNormal, 3, gl.FLOAT, false, 0, 0);
 
@@ -10,7 +11,6 @@ function setAttribPointers(obj) {
 
     gl.bindBuffer(gl.ARRAY_BUFFER, obj.tBuffer);
     gl.vertexAttribPointer(obj.vTexCoord, 2, gl.FLOAT, false, 0, 0);
-
 }
 
 

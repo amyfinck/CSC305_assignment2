@@ -1,4 +1,4 @@
-Common files:
+gitCommon files:
 
 webgl-utils.js: standard utilities from google to set up a webgl context
 
