@@ -445,6 +445,96 @@ function drawPetals() {
     }
 }
 
+function drawBug(timestamp)
+{
+    let phaseShift = 0;
+    gPush();
+    {
+        gTranslate(0.4, 0, 0);
+        gScale(0.4, 0.4, 0.4);
+        setColor(vec4(0, 1, 0, 1.0));
+        drawSphere();
+    }
+    gPop();
+
+    for(let j = 0; j < 8; j++)
+    {
+        gTranslate(0.4, 0, 0);
+        phaseShift -= 55;
+        var bugRotationIndex = Math.cos(timestamp/1000) + 1
+        gRotate(25*Math.cos((j/8)*Math.PI*2) * bugRotationIndex, 0, 0, 1);
+        gPush();
+        {
+            gTranslate(0.4, 0, 0);
+            gScale(0.4, 0.4, 0.4);
+            setColor(vec4(0, 1, 0, 1.0));
+            drawSphere();
+        }
+        gPop();
+    }
+    gPush();
+    {
+         gTranslate(0.7, 0.1, -0.15);
+         gScale(0.07, 0.07, 0.07);
+         setColor(vec4(0, 0, 0, 1.0));
+         drawSphere();
+    }
+    gPop();
+
+    gPush();
+    {
+        gTranslate(0.6, 0.4, -0.4);
+        gRotate(90, 0, 0, 1);
+        gRotate(-45, 0, 1, 0);
+        gPush();
+        {
+            gScale(0.1, 0.1, 0.6);
+            setColor(vec4(0, 1, 0, 1.0));
+            drawCylinder();
+        }
+        gPop();
+        gPush();
+        {
+            gTranslate(0, 0, -0.3)
+            gScale(0.1, 0.1, 0.1);
+            drawSphere();
+        }
+        gPop();
+    }
+    gPop();
+
+    gPush();
+    {
+        gTranslate(0.7, 0.1, 0.15);
+        gScale(0.07, 0.07, 0.07);
+        setColor(vec4(0, 0, 0, 1.0));
+        drawSphere();
+    }
+    gPop();
+
+    gPush();
+    {
+        gTranslate(0.6, 0.4, 0.4);
+        gRotate(-90, 0, 0, 1);
+        gRotate(-45, 0, 1, 0);
+        gPush();
+        {
+            gScale(0.1, 0.1, 0.6);
+            setColor(vec4(0, 1, 0, 1.0));
+            drawCylinder();
+        }
+        gPop();
+        gPush();
+        {
+            gTranslate(0, 0, 0.3)
+            gScale(0.1, 0.1, 0.1);
+            drawSphere();
+        }
+        gPop();
+    }
+    gPop();
+}
+
 function render(timestamp) {
     
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -546,15 +636,15 @@ function render(timestamp) {
             toggleTextures();
         }
         gPop();
-        gTranslate(1, 1.5, 0);
         // TODO two bugs kissing here
         gPush()
         {
             gScale(0.5, 0.5, 0.5);
             setColor(vec4(0, 1, 0, 1.0));
-            drawSphere();
+            //drawSphere();
         }
         gPop();
+        //drawSphere();
         
         // TODO remove this, its for debugging the flower centre texture
         // gPush()
@@ -567,6 +657,27 @@ function render(timestamp) {
         //     toggleTextures();
         // }
         // gPop();
+        
+        gPush()
+        {
+            gTranslate(-3.9, -0.8, 0);
+            gRotate(12, 0, 0, 1);
+            drawBug(timestamp);
+        }
+        gPop();
+
+        gPush()
+        {
+            gTranslate(3.9, -0.8, 0);
+            gRotate(180, 0, 1, 0)
+            gRotate(12, 0, 0, 1);
+            drawBug(timestamp);
+        }
+        gPop();
+        
+
+        
+        
 
     }
     gPop();

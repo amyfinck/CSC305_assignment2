@@ -26,8 +26,8 @@ main()
     //vec3 N = normalize( (modelViewMatrix*vec4(vNormal,0.0)).xyz);
     vec3 N = normalize( (normalMatrix*vec4(vNormal,0.0)).xyz);
 
-    // The light poistion has been put in eye coordinates, so it is a constant source
-    vec3 L = vec3(normalize((modelViewMatrix*lightPosition).xyz-pos)) ;
+    // TODO when I multiply by MVM bugs are illuminated from different sides
+    vec3 L = vec3(normalize((lightPosition).xyz-pos)) ;
     vec3 V = normalize(-pos.xyz) ;
     vec3 R = reflect(-L, N) ;
 
