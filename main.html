@@ -144,8 +144,18 @@ main()
 
             if(is_in_heart == 1)
             {
-                vec4 heartColor = vec4(1.0, 0.5, 0.5, 1);
-                // if it is in the heart shape, blend the texture with pink
+                // The r component of the color varies between 0.7 and 0.95 based on the time value
+                float r_color  = (cos(0.003 * time) + 1.)/5. + 0.8;
+
+                // The value of the g component increases as the x value increases
+                float g_color = ((st.x - 1./3.) * 2.);
+
+                // The value of the b component increases as the y value increases
+                float b_color = ((st.y - 1./3.) * 2.);
+
+                vec4 heartColor = vec4(r_color, g_color, b_color, 1);
+
+                // if it is in the heart shape, blend the texture 50/50 with the heart color
             	fragColor =  mix(texture( texture1, fTexCoord ), heartColor, 0.5);
             }
             else
@@ -158,6 +168,7 @@ main()
                 }
                 else
                 {
+                    // calculate the color of the fragment using lighting
                     fragColor = ads(fPos, fLpos, fN, texture( texture1, fTexCoord ));
                 }
             }
@@ -172,6 +183,7 @@ main()
             }
             else
             {
+                // calculate the color of the fragment using lighting
                 fragColor = ads(fPos, fLpos, fN, texture( texture1, fTexCoord ));
             }
         }
@@ -198,14 +210,12 @@ Oops ... your browser doesn't support the HTML5 canvas element
 <div id="animToggleButton">
     <input id="animToggleButton" type="button" value="Toggle Animation"
     />
-
 </div><br/>
 
-</div><br/>
+<div id="frameRateDisplay">
+    <p>Frame Rate: <span id="frameRate">0</span></p>
+</div>
 
-<div id="textureToggleButton">
-    <input id="textureToggleButtoni" type="button" value="Toggle Textures"
-    />
 
 </body>
 </html>

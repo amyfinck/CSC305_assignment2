@@ -12,6 +12,8 @@ var right = 6.0;
 var ytop =6.0;
 var bottom = -6.0;
 
+var lastUpdate = 0;
+var frameCount = 0;
 
 var lightPosition2 = vec4(100.0, 100.0, 100.0, 1.0 );
 var lightPosition = vec4(0.0, 0.0, 100.0, 1.0 );
@@ -54,6 +56,8 @@ var currentRotation = [0,0,0];
 var useTextures = 0;
 var drawHearts = 0;
 var noLighting = 0;
+
+var frameRateSpan;
 
 //making a texture image procedurally
 //1-D array
@@ -151,7 +155,7 @@ function setColor(c)
                                             "baseColor"),flatten(baseColor) );
     gl.uniform4fv( gl.getUniformLocation(program,
                                          "specularProduct"),flatten(specularProduct) );
-    gl.uniform1f( gl.getUniformLocation(program, 
+    gl.uniform1f( gl.getUniformLocation(program,
                                         "shininess"),materialShininess );
 }
 
@@ -377,7 +381,7 @@ window.onload = function init() {
     // screen resolution
     gl.uniform2f(gl.getUniformLocation(program,
         "resolution"), canvas.width, canvas.height);
-    
+
 
     document.getElementById("animToggleButton").onclick = function() {
         if( animFlag ) {
@@ -389,11 +393,8 @@ window.onload = function init() {
             window.requestAnimFrame(render);
         }
     };
-    
-    document.getElementById("textureToggleButton").onclick = function() {
-        toggleTextures() ;
-        window.requestAnimFrame(render);
-    };
+
+    frameRateSpan = document.getElementById("frameRate");
 
     var controller = new CameraController(canvas);
     controller.onchange = function(xRot,yRot) {
@@ -497,14 +498,14 @@ function drawPetals() {
     
     for(var i = 0; i < 12; i++) {
         gRotate(30, 0, 1, 0);
-        gPush(); // petal 1
+        gPush();
         {
             gTranslate(4, 0, 0);
             gScale(1.2, 0.5, 1.2);
             setColor(vec4(1, 0, 1, 1.0));
             drawSphere();
         }
-        gPop();	// petal 1
+        gPop();
     }
 }
 
@@ -728,6 +729,19 @@ function render(timestamp) {
         gPop();
     }
     gPop();
+
+    // once every 2 seconds, calculate and update frame rate
+    if (timestamp - lastUpdate >= 2000) {
+        const deltaTime = timestamp - lastUpdate;
+        // same as frameCount / (deltaTime / 1000), so frames per second
+        const frameRate = frameCount * 1000 / deltaTime;
+        frameRateSpan.textContent = frameRate.toFixed(2) + " fps";
+
+        frameCount = 0;
+        lastUpdate = timestamp;
+    }
+    frameCount++;
+
     if( animFlag )
         window.requestAnimFrame(render);
 }
