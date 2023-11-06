@@ -7,7 +7,6 @@ var program;
 var near = 1;
 var far = 100;
 
-
 var left = -6.0;
 var right = 6.0;
 var ytop =6.0;
@@ -150,14 +149,8 @@ function setColor(c)
     
     gl.uniform4fv( gl.getUniformLocation(program,
                                             "baseColor"),flatten(baseColor) );
-    //gl.uniform4fv( gl.getUniformLocation(program,
-                                         //"ambientProduct"),flatten(ambientProduct) );
-    //gl.uniform4fv( gl.getUniformLocation(program,
-                                         //"diffuseProduct"),flatten(diffuseProduct) );
     gl.uniform4fv( gl.getUniformLocation(program,
                                          "specularProduct"),flatten(specularProduct) );
-    //gl.uniform4fv( gl.getUniformLocation(program,
-                                         //"lightPosition"),flatten(lightPosition2) );
     gl.uniform1f( gl.getUniformLocation(program, 
                                         "shininess"),materialShininess );
 }
