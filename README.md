@@ -1,13 +1,12 @@
 1. Heirarchical body
-* Entire scene composed of scene graph, if flower were to move so would bugs
-* both bugs are heirarchical systems
+The scene consists of two bugs on a flower. The bugs are 
 2. Textures
 * One texture is the sky, this was mapped onto a cylinder
   * Image was taken from __ and is free for public use
 * Flower centre procedurally generated
 * Petals procedurally generated?
 3. ADS vertex -> Fragment shader
-
+* done 👍
 4. Phong -> Blinn-Phong
 5. Custom heart shader
 6. 360 fly around camera

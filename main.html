@@ -33,12 +33,14 @@ main()
 <script id="fragment-shader" type="x-shader/x-fragment">#version 300 es
 precision mediump float;
 
-uniform vec4 ambientProduct, diffuseProduct, specularProduct;
+uniform vec4 baseColor;
+uniform vec4 specularProduct;
 uniform float shininess;
 
 uniform sampler2D texture1;
 uniform int useTextures;
 uniform int drawHearts;
+uniform int noLighting;
 
 uniform vec2 resolution;
 uniform float time;
@@ -50,26 +52,39 @@ in vec3 fN;
 in vec2 fTexCoord;
 layout(location=0) out vec4 fragColor;
 
-// EXACTLY the same as in the case of per vertex ADS
-vec4 ads(vec3 pos, vec3 lpos, vec3 N)
+vec4 ads(vec3 pos, vec3 lpos, vec3 N, vec4 color)
 {
+    // I moved these here so lighting could apply to textures as well
+    vec4 lightAmbient = vec4(0.2, 0.2, 0.2, 1.0 );
+    vec4 lightDiffuse = vec4( 1.0, 1.0, 1.0, 1.0 );
+
+    vec4 ambientProduct = color * lightAmbient;
+    vec4 diffuseProduct = color * lightDiffuse;
+
     vec3 L = normalize(lpos - pos);
-    vec3 V = normalize(-pos); // why?
+    vec3 V = normalize(-pos);
+    // H is the vector halfway between L and V
+    vec3 H = normalize(L + V);
     vec3 R = reflect(-L, N);
+
     // Compute terms in the illumination equation
     float lightDotNormal = max( dot(L, N), 0.0 );
     vec4 diffuse = vec4(0.0, 0.0, 0.0, 1.0);
     diffuse = diffuseProduct * lightDotNormal;
-    float reflectedDotViewShiny = pow( max(dot(R, V), 0.0), shininess );
+
+    // blinn phong
+    float reflectedDotViewShiny = pow( max(dot(H, N), 0.0), shininess );
+
     vec4 specular = vec4(0.0, 0.0, 0.0, 1.0);
     specular = specularProduct * reflectedDotViewShiny;
     if( dot(L, N) < 0.0 )
     {
         specular = vec4(0.0, 0.0, 0.0, 1.0);
     }
-    vec4 color = ambientProduct + diffuse + specular;
-    color.a = 1.0;
-    return color;
+
+    vec4 l_color = ambientProduct + diffuse + specular;
+    l_color.a = 1.0;
+    return l_color;
 }
 
 int heart(vec2 st)
@@ -114,7 +129,7 @@ main()
 	if( useTextures == 0)
     {
         // If no texture set, use the color from the vertex shader
-        fragColor = ads(fPos, fLpos, fN);
+        fragColor = ads(fPos, fLpos, fN, baseColor);
 	}
 	else
 	{
@@ -131,18 +146,32 @@ main()
             {
                 vec4 heartColor = vec4(1.0, 0.5, 0.5, 1);
                 // if it is in the heart shape, blend the texture with the color from the vertex shader
-            	fragColor = mix(texture( texture1, fTexCoord ), heartColor, 0.5);
+            	fragColor =  mix(texture( texture1, fTexCoord ), heartColor, 0.5);
             }
             else
             {
                 // otherwise, just draw the texture
-                fragColor = texture( texture1, fTexCoord );
+                if(noLighting == 1)
+                {
+                    fragColor = texture( texture1, fTexCoord );
+                }
+                else
+                {
+                    fragColor = ads(fPos, fLpos, fN, texture( texture1, fTexCoord ));
+                }
             }
 	    }
 	    else
         {
             // otherwise, just draw the texture
-            fragColor = texture( texture1, fTexCoord );
+            if(noLighting == 1)
+            {
+                fragColor = texture( texture1, fTexCoord );
+            }
+            else
+            {
+                fragColor = ads(fPos, fLpos, fN, texture( texture1, fTexCoord ));
+            }
         }
 	}
 }

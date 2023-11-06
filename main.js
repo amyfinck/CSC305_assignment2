@@ -54,10 +54,11 @@ var currentRotation = [0,0,0];
 
 var useTextures = 0;
 var drawHearts = 0;
+var noLighting = 0;
 
 //making a texture image procedurally
 //1-D array
-var texSize =128;
+var texSize = 128;
 var imageFlowerCentreData = new Array();
 
 // Now for each entry of the array make another array
@@ -71,13 +72,17 @@ for (var i =0; i<texSize; i++)
 
 // Now for each entry in the 2D array let's set the colour.
 // We could have just as easily done this in the previous loop actually
-// TODO make centre of the flower a different color
-for (var i =0; i<texSize; i++) {
-	for (var j=0; j<texSize; j++) 
+var grad = 0
+for (i =0; i<texSize; i++) {
+	for (j=0; j<texSize; j++) 
     {
-        random = Math.random()
-        imageFlowerCentreData[i][j] = [random / 2 + 0.5, random / 2 + 0.5, 0, 1]
+        if (i < texSize / 2)
+        {
+            imageFlowerCentreData[i][j] = [1, grad, 0, 1]
+            imageFlowerCentreData[texSize-1 - i][j] = [1, grad, 0, 1]
+        }
     }
+    grad += 1/64
 }
 
 //Convert the image to uint8 rather than float.
@@ -88,8 +93,50 @@ for (var i = 0; i < texSize; i++)
 	   for(var k =0; k<4; k++)
 			imageFlowerCentre[4*texSize*i+4*j+k] = 255*imageFlowerCentreData[i][j][k];
 
-// TODO make flower petal textures
-		
+//making a texture image procedurally
+//1-D array
+var imageFlowerPetalData = new Array();
+
+// Now for each entry of the array make another array
+for (var i =0; i<texSize; i++)
+    imageFlowerPetalData[i] = new Array();
+
+// Now for each entry in the 2D array make a 4 element array (RGBA! for colour)
+for (var i =0; i<texSize; i++)
+    for ( var j = 0; j < texSize; j++)
+        imageFlowerPetalData[i][j] = new Float32Array(4);
+
+// Now for each entry in the 2D array let's set the colour.
+// We could have just as easily done this in the previous loop actually
+for (var i =0; i<texSize; i++) 
+{
+    random = Math.random()
+    for (var j=0; j<texSize; j++) 
+    {
+        if (i < texSize / 2)
+        {
+            if (random > 0.5) 
+            {
+                imageFlowerPetalData[i][j] = [1, 0.6, 0.6, 1]
+                imageFlowerPetalData[texSize-1 - i][j] = [1, 0.6, 0.6, 1]
+            }
+            else 
+            {
+                imageFlowerPetalData[i][j] = [0.94, 0.5, 0.633, 1]
+                imageFlowerPetalData[texSize-1 - i][j] = [0.94, 0.5, 0.633, 1]
+            }
+        }   
+    }
+}
+
+//Convert the image to uint8 rather than float.
+var imageFlowerPetal = new Uint8Array(4*texSize*texSize);
+
+for (var i = 0; i < texSize; i++)
+    for (var j = 0; j < texSize; j++)
+        for(var k =0; k<4; k++)
+            imageFlowerPetal[4*texSize*i+4*j+k] = 255*imageFlowerPetalData[i][j][k];
+
 // For this example we are going to store a few different textures here
 var textureArray = [] ;
 
@@ -97,17 +144,20 @@ var textureArray = [] ;
 function setColor(c)
 {
     ambientProduct = mult(lightAmbient, c);
-    diffuseProduct = mult(lightDiffuse, c);
+    baseColor = c;
+    // diffuseProduct = mult(lightDiffuse, c);
     specularProduct = mult(lightSpecular, materialSpecular);
     
     gl.uniform4fv( gl.getUniformLocation(program,
-                                         "ambientProduct"),flatten(ambientProduct) );
-    gl.uniform4fv( gl.getUniformLocation(program,
-                                         "diffuseProduct"),flatten(diffuseProduct) );
+                                            "baseColor"),flatten(baseColor) );
+    //gl.uniform4fv( gl.getUniformLocation(program,
+                                         //"ambientProduct"),flatten(ambientProduct) );
+    //gl.uniform4fv( gl.getUniformLocation(program,
+                                         //"diffuseProduct"),flatten(diffuseProduct) );
     gl.uniform4fv( gl.getUniformLocation(program,
                                          "specularProduct"),flatten(specularProduct) );
-    gl.uniform4fv( gl.getUniformLocation(program,
-                                         "lightPosition"),flatten(lightPosition2) );
+    //gl.uniform4fv( gl.getUniformLocation(program,
+                                         //"lightPosition"),flatten(lightPosition2) );
     gl.uniform1f( gl.getUniformLocation(program, 
                                         "shininess"),materialShininess );
 }
@@ -276,6 +326,12 @@ function toggleTextures() {
 	gl.uniform1i(gl.getUniformLocation(program, "useTextures"), useTextures);
 }
 
+// Turns off lighting for the sky
+function toggleNoLighting() {
+    noLighting = (noLighting + 1) % 2
+    gl.uniform1i(gl.getUniformLocation(program, "noLighting"), noLighting);
+}
+
 function toggleHearts() {
     drawHearts = (drawHearts + 1) % 2
     gl.uniform1i(gl.getUniformLocation(program, "drawHearts"), drawHearts);
@@ -314,10 +370,10 @@ window.onload = function init() {
     projectionMatrixLoc = gl.getUniformLocation( program, "projectionMatrix" );
 
     // Lighting Uniforms
-    gl.uniform4fv( gl.getUniformLocation(program, 
-       "ambientProduct"),flatten(ambientProduct) );
-    gl.uniform4fv( gl.getUniformLocation(program, 
-       "diffuseProduct"),flatten(diffuseProduct) );
+    // gl.uniform4fv( gl.getUniformLocation(program, 
+    //    "ambientProduct"),flatten(ambientProduct) );
+    // gl.uniform4fv( gl.getUniformLocation(program, 
+    //    "diffuseProduct"),flatten(diffuseProduct) );
     gl.uniform4fv( gl.getUniformLocation(program, 
        "specularProduct"),flatten(specularProduct) );	
     gl.uniform4fv( gl.getUniformLocation(program, 
@@ -360,6 +416,10 @@ window.onload = function init() {
     // load checkerboard texture
     textureArray.push({}) ;
     loadImageTexture(textureArray[textureArray.length-1],imageFlowerCentre) ;
+
+    // load checkerboard texture
+    textureArray.push({}) ;
+    loadImageTexture(textureArray[textureArray.length-1],imageFlowerPetal) ;
 
     waitForTextures(textureArray);
 }
@@ -462,7 +522,7 @@ function drawBug(timestamp)
     {
         gTranslate(0.4, 0, 0);
         gScale(0.4, 0.4, 0.4);
-        setColor(vec4(0, 1, 0, 1.0));
+        setColor(vec4(0, 0.7, 0, 1.0));
         drawSphere();
     }
     gPop();
@@ -477,7 +537,7 @@ function drawBug(timestamp)
         {
             gTranslate(0.4, 0, 0);
             gScale(0.4, 0.4, 0.4);
-            setColor(vec4(0, 1, 0, 1.0));
+            setColor(vec4(0, 0.7, 0, 1.0));
             drawSphere();
         }
         gPop();
@@ -499,7 +559,8 @@ function drawBug(timestamp)
         gPush();
         {
             gScale(0.1, 0.1, 0.6);
-            setColor(vec4(0, 1, 0, 1.0));
+            setColor(vec4(0, 0.7, 0, 1.0));
+
             drawCylinder();
         }
         gPop();
@@ -530,7 +591,7 @@ function drawBug(timestamp)
         gPush();
         {
             gScale(0.1, 0.1, 0.6);
-            setColor(vec4(0, 1, 0, 1.0));
+            setColor(vec4(0, 0.7, 0, 1.0));
             drawCylinder();
         }
         gPop();
@@ -596,6 +657,7 @@ function render(timestamp) {
         gl.bindTexture(gl.TEXTURE_2D, textureArray[0].textureWebGL);
         gl.uniform1i(gl.getUniformLocation(program, "texture1"), 0);
 
+        toggleNoLighting();
         if( Math.cos(timestamp/1000) + 1 < 0.5) 
         {
             toggleTextures() ;
@@ -610,6 +672,7 @@ function render(timestamp) {
             drawCylinder();
             toggleTextures() ;
         }
+        toggleNoLighting();
     }
     gPop();
 
@@ -633,7 +696,12 @@ function render(timestamp) {
         gPop();	// flower centre
         
         // flower petals
+        toggleTextures();
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, textureArray[2].textureWebGL);
+        gl.uniform1i(gl.getUniformLocation(program, "texture1"), 0);
         drawPetals();
+        toggleTextures();
 
         gPush(); // stem
         {
@@ -641,22 +709,10 @@ function render(timestamp) {
             gRotate(90, 0, 1, 0);
             gRotate(90, 1, 0, 0);
             gScale(0.5, 0.5, 6);
-            setColor(vec4(0, 1, 0, 1.0));
+            setColor(vec4(0, 0.7, 0, 1.0));
             drawCylinder();
         }
         gPop();	// stem
-
-        // TODO remove this, its for debugging the flower centre texture
-        // gPush()
-        // {
-        //     gTranslate(0, 1,0)
-        //     gScale(0.5, 0.5, 0.5);
-        //     setColor(vec4(0, 1, 0, 1.0));
-        //     toggleTextures();
-        //     drawCube();
-        //     toggleTextures();
-        // }
-        // gPop();
         
         gTranslate(0, 1.5, 0);
         // first bug
